@@ -1,0 +1,8 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "deploy": {
+    "startCommand": "PYTHONPATH=src python -m crypto_swing_alerts.app",
+    "cronSchedule": "5 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}

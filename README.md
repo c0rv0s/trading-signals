@@ -55,20 +55,28 @@ Run as a loop:
 PYTHONPATH=src RUN_ONCE=false python -m crypto_swing_alerts.app
 ```
 
-## Railway
+## Railway Cron
 
 Set these environment variables in Railway:
 
-- `PYTHONPATH=src`
-- `RUN_ONCE=false`
 - `TELEGRAM_BOT_TOKEN=...`
 - `TELEGRAM_CHAT_ID=...`
 
-Railway will use the `Procfile`:
+This repo includes `railway.json`, which configures Railway to run the scanner as a cron job:
 
-```text
-worker: python -m crypto_swing_alerts.app
+```json
+{
+  "deploy": {
+    "startCommand": "PYTHONPATH=src python -m crypto_swing_alerts.app",
+    "cronSchedule": "5 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}
 ```
+
+The schedule is UTC and runs at minute 5 of every hour. The app defaults to `RUN_ONCE=true`, so each Railway execution wakes up, fetches candles, runs analysis once, sends/prints any alerts, and exits.
+
+Do not set `RUN_ONCE=false` for the cron service. That mode is only for a persistent worker loop.
 
 ## Data Sources
 
