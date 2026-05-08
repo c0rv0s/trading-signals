@@ -40,7 +40,7 @@ def _send_or_print(signal: Signal, settings: Settings, state: SignalState, force
 
     if settings.telegram_bot_token and settings.telegram_chat_id:
         send_telegram_message(settings.telegram_bot_token, settings.telegram_chat_id, message)
-        LOGGER.info("Telegram alert sent for %s.", signal.asset)
+        LOGGER.info("Telegram message sent for %s.", signal.asset)
     else:
         LOGGER.info("Telegram credentials are not configured; alert printed only.")
 
@@ -52,6 +52,18 @@ def analyze_once_asset(asset: AssetConfig, settings: Settings) -> Signal:
     daily = fetch_candles(asset, "1d", settings.daily_lookback_days)
     hourly = fetch_candles(asset, "1h", settings.hourly_lookback_hours)
     return analyze_asset(asset, daily, hourly, settings)
+
+
+def _send_analysis_error(asset: AssetConfig, settings: Settings, error: Exception) -> None:
+    message = (
+        f"ANALYSIS ERROR: {asset.symbol} ({asset.market})\n"
+        f"Provider: {asset.provider}\n"
+        f"Error: {type(error).__name__}: {error}"
+    )
+    LOGGER.info("\n%s", message)
+    if settings.telegram_bot_token and settings.telegram_chat_id:
+        send_telegram_message(settings.telegram_bot_token, settings.telegram_chat_id, message)
+        LOGGER.info("Telegram error message sent for %s.", asset.symbol)
 
 
 def run_once(settings: Settings, state: SignalState) -> None:
@@ -73,8 +85,10 @@ def run_once(settings: Settings, state: SignalState) -> None:
     for asset in settings.assets:
         try:
             signal = analyze_once_asset(asset, settings)
-        except Exception:
+        except Exception as error:
             LOGGER.exception("Failed to analyze %s (%s/%s).", asset.symbol, asset.provider, asset.market)
+            if force_send:
+                _send_analysis_error(asset, settings, error)
             continue
         _send_or_print(signal, settings, state, force_send=force_send)
 

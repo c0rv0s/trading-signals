@@ -139,7 +139,7 @@ New strategies should register a function in `STRATEGIES` in `src/crypto_swing_a
 
 ## Data Sources
 
-- `ZEC` defaults to Binance spot `ZECUSDT`.
+- `ZEC` defaults to Hyperliquid perp `ZEC`.
 - `HYPE` defaults to Hyperliquid perp `HYPE`.
 
 Override with env vars:

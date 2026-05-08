@@ -48,7 +48,10 @@ def _env_float(name: str, default: float) -> float:
 
 def _asset_config(symbol: str) -> AssetConfig:
     normalized = symbol.strip().upper()
-    provider = os.getenv(f"{normalized}_PROVIDER", "hyperliquid_perp" if normalized == "HYPE" else "binance_spot")
+    provider = os.getenv(
+        f"{normalized}_PROVIDER",
+        "hyperliquid_perp" if normalized in {"HYPE", "ZEC"} else "binance_spot",
+    )
     market = os.getenv(f"{normalized}_MARKET", normalized if provider == "hyperliquid_perp" else f"{normalized}USDT")
     if provider not in {"binance_spot", "hyperliquid_perp"}:
         raise ValueError(f"{normalized}_PROVIDER must be binance_spot or hyperliquid_perp")
