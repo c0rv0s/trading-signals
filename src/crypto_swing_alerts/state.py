@@ -38,3 +38,13 @@ class SignalState:
         now = now or datetime.now(tz=timezone.utc)
         self.data[key] = now.isoformat()
         self._save()
+
+    def get_int(self, key: str, default: int = 0) -> int:
+        try:
+            return int(self.data.get(key, default))
+        except ValueError:
+            return default
+
+    def set_int(self, key: str, value: int) -> None:
+        self.data[key] = str(value)
+        self._save()

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import json
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from .models import Signal
+
+CHECK_IN_COMMANDS = {"hey", "update", "yo"}
+CHECK_IN_STATE_KEY = "telegram:last_check_in_update_id"
 
 
 def format_signal(signal: Signal) -> str:
@@ -22,6 +26,41 @@ def format_signal(signal: Signal) -> str:
         f"Reasons:\n{reasons}\n\n"
         f"Blockers:\n{blockers}"
     )
+
+
+def latest_check_in_update_id(bot_token: str, chat_id: str) -> int | None:
+    request = Request(
+        f"https://api.telegram.org/bot{bot_token}/getUpdates",
+        headers={"User-Agent": "crypto-swing-alerts/0.1"},
+        method="GET",
+    )
+    with urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    updates = payload.get("result", [])
+    for update in reversed(updates):
+        message = update.get("message") or update.get("edited_message")
+        if not isinstance(message, dict):
+            continue
+        chat = message.get("chat", {})
+        if str(chat.get("id")) != str(chat_id):
+            continue
+        text = str(message.get("text", "")).strip().lower()
+        if text in CHECK_IN_COMMANDS:
+            return int(update.get("update_id", 0))
+        return None
+    return None
+
+
+def acknowledge_telegram_update(bot_token: str, update_id: int) -> None:
+    query = urlencode({"offset": update_id + 1, "limit": 1})
+    request = Request(
+        f"https://api.telegram.org/bot{bot_token}/getUpdates?{query}",
+        headers={"User-Agent": "crypto-swing-alerts/0.1"},
+        method="GET",
+    )
+    with urlopen(request, timeout=20) as response:
+        response.read()
 
 
 def send_telegram_message(bot_token: str, chat_id: str, text: str) -> None:

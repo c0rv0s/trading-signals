@@ -78,6 +78,12 @@ The schedule is UTC and runs at minute 5 of every hour. The app defaults to `RUN
 
 Do not set `RUN_ONCE=false` for the cron service. That mode is only for a persistent worker loop.
 
+## Telegram Behavior
+
+The bot sends Telegram messages only when a valid entry alert is detected. No-trade analysis stays in logs.
+
+For a manual check-in, send `yo`, `hey`, or `update` to the bot before the next cron run. If that is the latest message from the configured `TELEGRAM_CHAT_ID`, the next run sends the full analysis even when there is no trade. Each check-in request is handled once.
+
 ## Data Sources
 
 - `ZEC` defaults to Binance spot `ZECUSDT`.
