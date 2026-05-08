@@ -19,7 +19,7 @@ def format_signal(signal: Signal) -> str:
         f"Score: {signal.score}\n"
         f"Entry: {signal.entry:.6g}\n"
         f"Stop: {signal.stop:.6g} ({signal.stop_pct:.2%})\n"
-        f"10x estimated liquidation buffer after stop: {signal.liquidation_buffer_pct:.2%}\n"
+        f"Estimated liquidation buffer after stop: {signal.liquidation_buffer_pct:.2%}\n"
         f"TP1: {signal.take_profit_1:.6g} | TP2: {signal.take_profit_2:.6g} | TP3: {signal.take_profit_3:.6g}\n"
         f"RR to TP2: {signal.risk_reward_to_tp2:.2f}R\n"
         f"Generated: {signal.generated_at.isoformat()}\n\n"

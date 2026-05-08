@@ -1,7 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "deploy": {
-    "startCommand": "PYTHONPATH=src python -m crypto_swing_alerts.app",
+    "startCommand": "PYTHONPATH=src STRATEGY=swing_breakout LEVERAGE=5 MIN_SCORE_TO_ALERT=8 MAX_STOP_PCT=0.025 MAX_MARGIN_LOSS_PCT=0.12 LIQUIDATION_BUFFER_PCT=0.01 python -m crypto_swing_alerts.app",
     "cronSchedule": "5 * * * *",
     "restartPolicyType": "NEVER"
   }

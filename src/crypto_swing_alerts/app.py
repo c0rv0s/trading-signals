@@ -55,7 +55,7 @@ def analyze_once_asset(asset: AssetConfig, settings: Settings) -> Signal:
 
 
 def run_once(settings: Settings, state: SignalState) -> None:
-    LOGGER.info("Starting scan at %s", datetime.now(tz=timezone.utc).isoformat())
+    LOGGER.info("Starting %s scan at %s", settings.strategy_name, datetime.now(tz=timezone.utc).isoformat())
     force_send = False
     if settings.telegram_bot_token and settings.telegram_chat_id:
         try:

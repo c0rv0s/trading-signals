@@ -20,6 +20,19 @@ Hourly trigger:
 - Breakout volume ideally above 1.25x hourly volume SMA20.
 - ATR compression and higher-low structure add confidence.
 
+Select this strategy with `STRATEGY=swing_breakout`. This is the default and the current recommended live strategy.
+
+Additional registered strategies are available for research:
+
+- `pullback_reclaim`
+- `momentum_continuation`
+- `council_long`
+- `volatility_contraction_breakout`
+- `liquidity_sweep_reversal`
+- `range_reclaim`
+- `vwap_reclaim`
+- `structure_retest`
+
 Risk rules:
 
 - Entry is the latest completed hourly close.
@@ -27,7 +40,15 @@ Risk rules:
 - Alerts are blocked when the stop is wider than `MAX_STOP_PCT`, tighter than `MIN_STOP_PCT`, or too close to an estimated 10x liquidation zone.
 - TP1 is 1.5R, TP2 is 3R, TP3 is 5R.
 
-For 10x leverage, the stop must be placed with the exchange immediately after entry. The default `MAX_STOP_PCT=0.045` means the setup is rejected if the stop is wider than 4.5% from entry.
+For 10x leverage, the stop must be placed with the exchange immediately after entry. The default `MAX_STOP_PCT=0.025` means the setup is rejected if the stop is wider than 2.5% from entry.
+
+The live defaults are leverage-aware:
+
+- `LEVERAGE=5`
+- `MAX_MARGIN_LOSS_PCT=0.12`
+- `LIQUIDATION_BUFFER_PCT=0.01`
+
+That means a stopped trade is rejected if its price stop would risk more than 12% of isolated margin at the configured leverage, or if the stop is not at least 1% of entry above the estimated liquidation price.
 
 ## Setup
 
@@ -83,6 +104,38 @@ Do not set `RUN_ONCE=false` for the cron service. That mode is only for a persis
 The bot sends Telegram messages only when a valid entry alert is detected. No-trade analysis stays in logs.
 
 For a manual check-in, send `yo`, `hey`, or `update` to the bot before the next cron run. If that is the latest message from the configured `TELEGRAM_CHAT_ID`, the next run sends the full analysis even when there is no trade. Each check-in request is handled once.
+
+## Backtesting
+
+Run a local backtest against the configured watchlist and strategy:
+
+```bash
+PYTHONPATH=src STRATEGY=swing_breakout WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest
+```
+
+Compare every registered strategy:
+
+```bash
+PYTHONPATH=src WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest --strategy all
+```
+
+Sweep leverage from 3x through 10x:
+
+```bash
+PYTHONPATH=src WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
+```
+
+Useful knobs:
+
+```bash
+PYTHONPATH=src python -m crypto_swing_alerts.backtest --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
+```
+
+The backtester walks forward one completed hourly candle at a time, evaluates the selected strategy without future candles, opens on alerts, and scores exits at stop, TP2, or timeout.
+
+Backtest output includes R-multiple results, leveraged margin return, and liquidation counts. Liquidation is modeled conservatively from configured leverage and maintenance margin. Funding and open-interest strategies are not tested because the current data layer only fetches OHLCV candles.
+
+New strategies should register a function in `STRATEGIES` in `src/crypto_swing_alerts/strategy.py`, then select it with `STRATEGY=your_strategy_name`.
 
 ## Data Sources
 

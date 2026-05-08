@@ -4,12 +4,13 @@ import unittest
 
 from crypto_swing_alerts.config import Settings
 from crypto_swing_alerts.models import AssetConfig, Candle
-from crypto_swing_alerts.strategy import analyze_asset
+from crypto_swing_alerts.strategy import STRATEGIES, analyze_asset, get_strategy
 
 
 def _settings() -> Settings:
     return Settings(
         assets=(),
+        strategy_name="swing_breakout",
         telegram_bot_token=None,
         telegram_chat_id=None,
         run_once=True,
@@ -19,6 +20,10 @@ def _settings() -> Settings:
         max_stop_pct=0.06,
         min_stop_pct=0.002,
         max_distance_from_hourly_ema_pct=0.05,
+        leverage=5.0,
+        max_margin_loss_pct=0.20,
+        maintenance_margin_pct=0.005,
+        liquidation_buffer_pct=0.01,
         daily_lookback_days=180,
         hourly_lookback_hours=500,
         state_file=Path(".signal_state_test.json"),
@@ -52,6 +57,21 @@ class StrategyTests(unittest.TestCase):
         self.assertGreaterEqual(signal.score, 7)
         self.assertGreater(signal.entry, signal.stop)
         self.assertGreater(signal.take_profit_2, signal.entry)
+
+    def test_get_strategy_rejects_unknown_name(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unknown strategy"):
+            get_strategy("missing")
+
+    def test_expected_strategies_are_registered(self) -> None:
+        self.assertIn("swing_breakout", STRATEGIES)
+        self.assertIn("pullback_reclaim", STRATEGIES)
+        self.assertIn("momentum_continuation", STRATEGIES)
+        self.assertIn("council_long", STRATEGIES)
+        self.assertIn("volatility_contraction_breakout", STRATEGIES)
+        self.assertIn("liquidity_sweep_reversal", STRATEGIES)
+        self.assertIn("range_reclaim", STRATEGIES)
+        self.assertIn("vwap_reclaim", STRATEGIES)
+        self.assertIn("structure_retest", STRATEGIES)
 
 
 if __name__ == "__main__":

@@ -55,12 +55,8 @@ def _drop_incomplete(candles: list[Candle], interval: str) -> list[Candle]:
     return [candle for candle in candles if candle.timestamp_ms + candle_ms <= now_ms]
 
 
-def _fetch_binance_klines(market: str, interval: str, limit: int) -> list[Candle]:
-    raw = _get_json(
-        f"{BINANCE_BASE_URL}/api/v3/klines",
-        {"symbol": market.upper(), "interval": interval, "limit": min(limit, 1000)},
-    )
-    candles = [
+def _parse_binance_klines(raw: list[Any]) -> list[Candle]:
+    return [
         Candle(
             opened_at=_utc_from_ms(int(row[0])),
             open=float(row[1]),
@@ -71,7 +67,39 @@ def _fetch_binance_klines(market: str, interval: str, limit: int) -> list[Candle
         )
         for row in raw
     ]
-    return _drop_incomplete(candles, interval)
+
+
+def _fetch_binance_klines(market: str, interval: str, limit: int) -> list[Candle]:
+    raw_rows: list[Any] = []
+    end_time = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+    remaining = limit + 5
+    while remaining > 0:
+        batch = _get_json(
+            f"{BINANCE_BASE_URL}/api/v3/klines",
+            {
+                "symbol": market.upper(),
+                "interval": interval,
+                "limit": min(remaining, 1000),
+                "endTime": end_time,
+            },
+        )
+        if not batch:
+            break
+        raw_rows = batch + raw_rows
+        first_open_time = int(batch[0][0])
+        end_time = first_open_time - 1
+        remaining -= len(batch)
+        if len(batch) < 1000:
+            break
+
+    seen: set[int] = set()
+    candles = [
+        candle
+        for candle in _parse_binance_klines(raw_rows)
+        if candle.timestamp_ms not in seen and not seen.add(candle.timestamp_ms)
+    ]
+    candles.sort(key=lambda candle: candle.opened_at)
+    return _drop_incomplete(candles[-limit:], interval)
 
 
 def _fetch_hyperliquid_candles(market: str, interval: str, lookback: int) -> list[Candle]:
