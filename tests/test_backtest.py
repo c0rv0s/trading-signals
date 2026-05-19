@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
 
-from crypto_swing_alerts.backtest import backtest_asset
+from crypto_swing_alerts.backtest import BacktestSummary, backtest_asset, _write_reports
 from crypto_swing_alerts.config import Settings
 from crypto_swing_alerts.models import AssetConfig, Candle, Signal
 from crypto_swing_alerts.strategy import STRATEGIES
@@ -93,6 +93,42 @@ class BacktestTests(unittest.TestCase):
 
         self.assertEqual(result.strategy_name, "test_strategy")
         self.assertGreaterEqual(len(result.trades), 1)
+
+    def test_write_reports_creates_markdown_and_csv(self) -> None:
+        report_dir = Path("/tmp/crypto_swing_alerts_test_reports")
+        settings = _settings()
+        summary = BacktestSummary(
+            asset="TEST",
+            strategy_name="test_strategy",
+            leverage=5.0,
+            trades=1,
+            wins=1,
+            losses=0,
+            liquidations=0,
+            win_rate=1.0,
+            total_r=3.0,
+            average_r=3.0,
+            profit_factor=3.0,
+            max_drawdown_r=0.0,
+            total_margin_return_pct=0.15,
+            average_margin_return_pct=0.15,
+        )
+
+        md_path, csv_path = _write_reports(
+            report_dir,
+            "unit_test_report",
+            settings,
+            ("test_strategy",),
+            (5.0,),
+            72,
+            [summary],
+            [],
+        )
+
+        self.assertTrue(md_path.exists())
+        self.assertTrue(csv_path.exists())
+        self.assertIn("Backtest Report", md_path.read_text())
+        self.assertIn("test_strategy", csv_path.read_text())
 
 
 if __name__ == "__main__":

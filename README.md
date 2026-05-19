@@ -125,6 +125,14 @@ Sweep leverage from 3x through 10x:
 PYTHONPATH=src WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
 ```
 
+Save a Markdown and CSV report:
+
+```bash
+PYTHONPATH=src WATCHLIST=BTC,ETH,SOL,XMR,PENGU,XRP python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72 --save-report --report-name 2026-05-19_major_coin_sweep
+```
+
+Reports are written under `backtests/` by default.
+
 Useful knobs:
 
 ```bash
