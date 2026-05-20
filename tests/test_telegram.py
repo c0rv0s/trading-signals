@@ -1,8 +1,10 @@
 import json
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import patch
 
-from crypto_swing_alerts.telegram import acknowledge_telegram_update, latest_check_in_update_id
+from crypto_swing_alerts.models import Signal
+from crypto_swing_alerts.telegram import acknowledge_telegram_update, format_signal, latest_check_in_update_id
 
 
 class _Response:
@@ -20,6 +22,32 @@ class _Response:
 
 
 class TelegramTests(unittest.TestCase):
+    def test_format_signal_labels_take_profit_r_multiples(self) -> None:
+        signal = Signal(
+            asset="HYPE",
+            market="HYPE",
+            provider="hyperliquid_perp",
+            score=11,
+            should_alert=True,
+            entry=100.0,
+            stop=98.0,
+            stop_pct=0.02,
+            liquidation_buffer_pct=0.12,
+            take_profit_1=103.0,
+            take_profit_2=106.0,
+            take_profit_3=120.0,
+            risk_reward_to_tp2=3.0,
+            reasons=("breakout confirmed",),
+            blockers=(),
+            generated_at=datetime(2026, 5, 20, tzinfo=timezone.utc),
+        )
+
+        message = format_signal(signal)
+
+        self.assertIn("TP1 (1.5R): 103", message)
+        self.assertIn("TP2 (3R): 106", message)
+        self.assertIn("TP3 (10R): 120", message)
+
     def test_latest_check_in_update_id_matches_latest_chat_command(self) -> None:
         payload = {
             "ok": True,

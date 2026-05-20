@@ -4,7 +4,12 @@ import unittest
 
 from crypto_swing_alerts.config import Settings
 from crypto_swing_alerts.models import AssetConfig, Candle
-from crypto_swing_alerts.strategy import STRATEGIES, analyze_asset, get_strategy
+from crypto_swing_alerts.strategy import (
+    STRATEGIES,
+    analyze_asset,
+    get_strategy,
+    take_profit_r_levels_for_score,
+)
 
 
 def _settings() -> Settings:
@@ -72,6 +77,11 @@ class StrategyTests(unittest.TestCase):
         self.assertIn("range_reclaim", STRATEGIES)
         self.assertIn("vwap_reclaim", STRATEGIES)
         self.assertIn("structure_retest", STRATEGIES)
+
+    def test_take_profit_ladder_scales_with_score(self) -> None:
+        self.assertEqual(take_profit_r_levels_for_score(9), (1.5, 3.0, 5.0))
+        self.assertEqual(take_profit_r_levels_for_score(10), (2.0, 5.0, 10.0))
+        self.assertEqual(take_profit_r_levels_for_score(11), (2.0, 5.0, 10.0))
 
 
 if __name__ == "__main__":

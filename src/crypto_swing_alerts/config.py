@@ -6,6 +6,8 @@ from pathlib import Path
 
 from .models import AssetConfig, Provider
 
+HYPERLIQUID_DEFAULT_SYMBOLS = {"BTC", "ETH", "HYPE", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -50,7 +52,7 @@ def _asset_config(symbol: str) -> AssetConfig:
     normalized = symbol.strip().upper()
     provider = os.getenv(
         f"{normalized}_PROVIDER",
-        "hyperliquid_perp" if normalized in {"HYPE", "ZEC"} else "binance_spot",
+        "hyperliquid_perp" if normalized in HYPERLIQUID_DEFAULT_SYMBOLS else "binance_spot",
     )
     market = os.getenv(f"{normalized}_MARKET", normalized if provider == "hyperliquid_perp" else f"{normalized}USDT")
     if provider not in {"binance_spot", "hyperliquid_perp"}:

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
 
-from crypto_swing_alerts.backtest import BacktestSummary, backtest_asset, _write_reports
+from crypto_swing_alerts.backtest import BacktestSummary, analyze_exit_policies_asset, backtest_asset, _write_reports
 from crypto_swing_alerts.config import Settings
 from crypto_swing_alerts.models import AssetConfig, Candle, Signal
 from crypto_swing_alerts.strategy import STRATEGIES
@@ -129,6 +129,49 @@ class BacktestTests(unittest.TestCase):
         self.assertTrue(csv_path.exists())
         self.assertIn("Backtest Report", md_path.read_text())
         self.assertIn("test_strategy", csv_path.read_text())
+
+    def test_analyze_exit_policies_returns_policy_summaries(self) -> None:
+        asset = AssetConfig(symbol="TEST", provider="binance_spot", market="TESTUSDT")
+        settings = _settings()
+
+        def test_strategy(asset: AssetConfig, daily: list[Candle], hourly: list[Candle], settings: Settings) -> Signal:
+            last = hourly[-1]
+            should_alert = len(hourly) == 130
+            return Signal(
+                asset=asset.symbol,
+                market=asset.market,
+                provider=asset.provider,
+                score=10 if should_alert else 0,
+                should_alert=should_alert,
+                entry=last.close,
+                stop=last.close - 1,
+                stop_pct=0.01,
+                liquidation_buffer_pct=0.07,
+                take_profit_1=last.close + 1.5,
+                take_profit_2=last.close + 3,
+                take_profit_3=last.close + 5,
+                risk_reward_to_tp2=3.0,
+                reasons=(),
+                blockers=(),
+                generated_at=last.opened_at,
+            )
+
+        STRATEGIES["test_strategy"] = test_strategy
+        try:
+            summaries = analyze_exit_policies_asset(
+                asset,
+                _candles(120, 24, 20, spike_index=100),
+                _candles(220, 1, 40, spike_index=130),
+                settings,
+            )
+        finally:
+            del STRATEGIES["test_strategy"]
+
+        policies = {summary.policy for summary in summaries}
+        self.assertIn("static_ladder", policies)
+        self.assertIn("score_ladder", policies)
+        self.assertIn("fixed_5r", policies)
+        self.assertIn("runner_ema21", policies)
 
 
 if __name__ == "__main__":

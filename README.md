@@ -1,6 +1,6 @@
 # Crypto Swing Alerts
 
-Hourly swing-long scanner for `ZEC` and `HYPE`. It combines a daily trend filter with an hourly breakout trigger and prints or sends a Telegram alert with entry, stop, take-profit levels, and blockers.
+Hourly swing-long scanner for a configured crypto watchlist. It combines a daily trend filter with an hourly breakout trigger and prints or sends a Telegram alert with entry, stop, take-profit levels, and blockers.
 
 This is not financial advice and it does not predict that a move must happen. It is a rules engine for waiting until price, trend, volume, and leverage-compatible risk all line up.
 
@@ -38,7 +38,7 @@ Risk rules:
 - Entry is the latest completed hourly close.
 - Stop is the tighter of structure invalidation and 1.4x hourly ATR.
 - Alerts are blocked when the stop is wider than `MAX_STOP_PCT`, tighter than `MIN_STOP_PCT`, or too close to an estimated 10x liquidation zone.
-- TP1 is 1.5R, TP2 is 3R, TP3 is 5R.
+- TP levels are score-based from exit backtests. Scores 8-9 use `1.5R / 3R / 5R`; scores 10+ use `2R / 5R / 10R`.
 
 For 10x leverage, the stop must be placed with the exchange immediately after entry. The default `MAX_STOP_PCT=0.025` means the setup is rejected if the stop is wider than 2.5% from entry.
 
@@ -133,13 +133,21 @@ PYTHONPATH=src WATCHLIST=BTC,ETH,SOL,XMR,PENGU,XRP python -m crypto_swing_alerts
 
 Reports are written under `backtests/` by default.
 
+Analyze exit policies and maximum favorable excursion:
+
+```bash
+PYTHONPATH=src WATCHLIST=HYPE STRATEGY=swing_breakout LEVERAGE=5 python -m crypto_swing_alerts.backtest --exit-analysis --hourly-lookback-hours 3000 --daily-lookback-days 365 --max-hold-hours 168
+```
+
+This compares the live score-based TP ladder against the old static ladder, fixed 3R/5R/8R/10R exits, and EMA/ATR trailing runners.
+
 Useful knobs:
 
 ```bash
 PYTHONPATH=src python -m crypto_swing_alerts.backtest --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
 ```
 
-The backtester walks forward one completed hourly candle at a time, evaluates the selected strategy without future candles, opens on alerts, and scores exits at stop, TP2, or timeout.
+The backtester walks forward one completed hourly candle at a time, evaluates the selected strategy without future candles, opens on alerts, and scores exits using the same equal-third TP ladder shown in alerts with the configured initial stop and liquidation model.
 
 Backtest output includes R-multiple results, leveraged margin return, and liquidation counts. Liquidation is modeled conservatively from configured leverage and maintenance margin. Funding and open-interest strategies are not tested because the current data layer only fetches OHLCV candles.
 
@@ -147,25 +155,25 @@ New strategies should register a function in `STRATEGIES` in `src/crypto_swing_a
 
 ## Data Sources
 
-- `ZEC` defaults to Hyperliquid perp `ZEC`.
-- `HYPE` defaults to Hyperliquid perp `HYPE`.
+- `BTC`, `ETH`, `HYPE`, `PENGU`, `SOL`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
+- Other symbols default to Binance spot as `<SYMBOL>USDT`.
 
 Override with env vars:
 
 ```bash
-WATCHLIST=ZEC,HYPE
-ZEC_PROVIDER=binance_spot
-ZEC_MARKET=ZECUSDT
-HYPE_PROVIDER=hyperliquid_perp
-HYPE_MARKET=HYPE
+WATCHLIST=ZEC,HYPE,BTC
+ZEC_PROVIDER=hyperliquid_perp
+ZEC_MARKET=ZEC
+BTC_PROVIDER=binance_spot
+BTC_MARKET=BTCUSDT
 ```
 
 ## Exit Discipline
 
-The alert gives static TP levels. A practical management rule is:
+The alert gives score-based TP levels. A practical management rule is:
 
 - Move stop to breakeven after TP1 or after an hourly close 1.5R above entry.
-- Exit fully at TP2/TP3, or trail under hourly EMA21 after TP2.
+- Scale out across TP1/TP2/TP3, or trail under hourly EMA21 after TP2.
 - Exit early on an hourly close back below EMA55 or a daily close back below EMA20.
 
 Backtest these rules before increasing size. Tight 10x stops can lose repeatedly during chop even when the larger thesis is right.

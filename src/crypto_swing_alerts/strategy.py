@@ -20,6 +20,12 @@ def _risk_reward(entry: float, stop: float, target: float) -> float:
     return 0.0 if risk <= 0 else (target - entry) / risk
 
 
+def take_profit_r_levels_for_score(score: int) -> tuple[float, float, float]:
+    if score >= 10:
+        return (2.0, 5.0, 10.0)
+    return (1.5, 3.0, 5.0)
+
+
 def _rolling_vwap(candles: list[Candle], period: int) -> float | None:
     if len(candles) < period:
         return None
@@ -95,9 +101,10 @@ def _finalize_long_signal(
 ) -> Signal:
     stop_pct = 0.0 if entry <= 0 else (entry - stop) / entry
     risk = max(entry - stop, 0.0)
-    take_profit_1 = entry + 1.5 * risk
-    take_profit_2 = entry + target_2_r * risk
-    take_profit_3 = entry + 5.0 * risk
+    tp1_r, tp2_r, tp3_r = take_profit_r_levels_for_score(score)
+    take_profit_1 = entry + tp1_r * risk
+    take_profit_2 = entry + max(target_2_r, tp2_r) * risk
+    take_profit_3 = entry + max(target_2_r, tp3_r) * risk
     buffer_pct = liquidation_buffer_pct(
         entry,
         stop,
