@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -18,7 +19,11 @@ from .telegram import (
 )
 
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    stream=sys.stdout,
+)
 LOGGER = logging.getLogger("crypto_swing_alerts")
 
 

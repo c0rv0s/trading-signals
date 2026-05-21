@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import json
+import logging
 from typing import Any
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -11,7 +13,9 @@ from .models import AssetConfig, Candle
 
 BINANCE_BASE_URL = "https://api.binance.com"
 HYPERLIQUID_INFO_URL = "https://api.hyperliquid.xyz/info"
+HYPERLIQUID_FALLBACK_SYMBOLS = {"BTC", "ETH", "HYPE", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
 TIMEOUT_SECONDS = 20
+LOGGER = logging.getLogger("crypto_swing_alerts.data")
 
 
 def _utc_from_ms(timestamp_ms: int) -> datetime:
@@ -135,7 +139,17 @@ def _fetch_hyperliquid_candles(market: str, interval: str, lookback: int) -> lis
 
 def fetch_candles(asset: AssetConfig, interval: str, lookback: int) -> list[Candle]:
     if asset.provider == "binance_spot":
-        return _fetch_binance_klines(asset.market, interval, lookback)
+        try:
+            return _fetch_binance_klines(asset.market, interval, lookback)
+        except HTTPError as error:
+            if error.code != 451 or asset.symbol not in HYPERLIQUID_FALLBACK_SYMBOLS:
+                raise
+            LOGGER.warning(
+                "Binance returned HTTP 451 for %s/%s; falling back to Hyperliquid candles.",
+                asset.symbol,
+                asset.market,
+            )
+            return _fetch_hyperliquid_candles(asset.symbol, interval, lookback)
     if asset.provider == "hyperliquid_perp":
         return _fetch_hyperliquid_candles(asset.market, interval, lookback)
     raise ValueError(f"Unsupported provider: {asset.provider}")

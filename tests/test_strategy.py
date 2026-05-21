@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from dataclasses import replace
 from pathlib import Path
 import unittest
 
@@ -25,6 +26,8 @@ def _settings() -> Settings:
         max_stop_pct=0.06,
         min_stop_pct=0.002,
         max_distance_from_hourly_ema_pct=0.05,
+        momentum_continuation_max_pullback_pct=0.015,
+        momentum_continuation_min_24h_gain_pct=0.04,
         leverage=5.0,
         max_margin_loss_pct=0.20,
         maintenance_margin_pct=0.005,
@@ -62,6 +65,44 @@ class StrategyTests(unittest.TestCase):
         self.assertGreaterEqual(signal.score, 7)
         self.assertGreater(signal.entry, signal.stop)
         self.assertGreater(signal.take_profit_2, signal.entry)
+
+    def test_swing_breakout_allows_strong_momentum_continuation_near_high(self) -> None:
+        settings = Settings(**{**_settings().__dict__, "min_score_to_alert": 8})
+        asset = AssetConfig(symbol="TEST", provider="binance_spot", market="TESTUSDT")
+        daily = []
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        for index in range(120):
+            close = 50 + index * 0.25 + (2 if index % 2 else -2)
+            daily.append(
+                Candle(
+                    opened_at=base + timedelta(days=index),
+                    open=close - 0.5,
+                    high=close + 0.5,
+                    low=close - 1.0,
+                    close=close,
+                    volume=1000.0,
+                )
+            )
+        hourly = _trend_candles(180, 1, 40)
+        hourly[-25] = replace(hourly[-25], close=100.0)
+        hourly[-2] = replace(hourly[-2], high=112.0)
+        hourly[-1] = replace(
+            hourly[-1],
+            open=108.0,
+            high=112.5,
+            low=109.0,
+            close=111.0,
+            volume=3000.0,
+        )
+
+        signal = analyze_asset(asset, daily, hourly, settings)
+
+        self.assertTrue(signal.should_alert)
+        self.assertIn(
+            "hourly close is holding near the prior 24-hour high after a strong 24-hour move",
+            signal.reasons,
+        )
+        self.assertNotIn("no hourly close above the prior 24-hour high", signal.blockers)
 
     def test_get_strategy_rejects_unknown_name(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unknown strategy"):

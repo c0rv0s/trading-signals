@@ -16,7 +16,7 @@ Daily filter:
 Hourly trigger:
 
 - Hourly close above EMA21 and EMA55.
-- Hourly close breaks the prior 24-hour high.
+- Hourly close breaks the prior 24-hour high, or holds within `MOMENTUM_CONTINUATION_MAX_PULLBACK_PCT` of that high after a strong 24-hour move.
 - Breakout volume ideally above 1.25x hourly volume SMA20.
 - ATR compression and higher-low structure add confidence.
 
@@ -47,6 +47,8 @@ The live defaults are leverage-aware:
 - `LEVERAGE=5`
 - `MAX_MARGIN_LOSS_PCT=0.12`
 - `LIQUIDATION_BUFFER_PCT=0.01`
+- `MOMENTUM_CONTINUATION_MAX_PULLBACK_PCT=0.015`
+- `MOMENTUM_CONTINUATION_MIN_24H_GAIN_PCT=0.04`
 
 That means a stopped trade is rejected if its price stop would risk more than 12% of isolated margin at the configured leverage, or if the stop is not at least 1% of entry above the estimated liquidation price.
 
@@ -157,6 +159,7 @@ New strategies should register a function in `STRATEGIES` in `src/crypto_swing_a
 
 - `BTC`, `ETH`, `HYPE`, `PENGU`, `SOL`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
 - Other symbols default to Binance spot as `<SYMBOL>USDT`.
+- If Binance returns HTTP 451 for a known Hyperliquid symbol, the scanner falls back to Hyperliquid candles for that request.
 
 Override with env vars:
 

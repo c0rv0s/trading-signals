@@ -21,6 +21,8 @@ def _settings() -> Settings:
         max_stop_pct=0.06,
         min_stop_pct=0.002,
         max_distance_from_hourly_ema_pct=0.08,
+        momentum_continuation_max_pullback_pct=0.015,
+        momentum_continuation_min_24h_gain_pct=0.04,
         leverage=5.0,
         max_margin_loss_pct=0.20,
         maintenance_margin_pct=0.005,

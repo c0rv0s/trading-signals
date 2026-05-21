@@ -22,6 +22,8 @@ class Settings:
     max_stop_pct: float
     min_stop_pct: float
     max_distance_from_hourly_ema_pct: float
+    momentum_continuation_max_pullback_pct: float
+    momentum_continuation_min_24h_gain_pct: float
     leverage: float
     max_margin_loss_pct: float
     maintenance_margin_pct: float
@@ -78,6 +80,8 @@ def load_settings() -> Settings:
         max_stop_pct=_env_float("MAX_STOP_PCT", 0.025),
         min_stop_pct=_env_float("MIN_STOP_PCT", 0.008),
         max_distance_from_hourly_ema_pct=_env_float("MAX_DISTANCE_FROM_HOURLY_EMA_PCT", 0.035),
+        momentum_continuation_max_pullback_pct=_env_float("MOMENTUM_CONTINUATION_MAX_PULLBACK_PCT", 0.015),
+        momentum_continuation_min_24h_gain_pct=_env_float("MOMENTUM_CONTINUATION_MIN_24H_GAIN_PCT", 0.04),
         leverage=_env_float("LEVERAGE", 5.0),
         max_margin_loss_pct=_env_float("MAX_MARGIN_LOSS_PCT", 0.12),
         maintenance_margin_pct=_env_float("MAINTENANCE_MARGIN_PCT", 0.005),

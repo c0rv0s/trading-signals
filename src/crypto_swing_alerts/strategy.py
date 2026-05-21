@@ -177,6 +177,7 @@ def analyze_swing_breakout(asset: AssetConfig, daily: list[Candle], hourly: list
     high_24h = previous_high(hourly, 24)
     low_12h = previous_low(hourly, 12)
     low_24h = previous_low(hourly, 24)
+    close_24h_ago = hourly[-25].close
 
     score = 0
     if daily_ema50 is not None and last_daily.close > daily_ema50:
@@ -209,6 +210,17 @@ def analyze_swing_breakout(asset: AssetConfig, daily: list[Candle], hourly: list
     if hourly_breakout:
         score += 2
         reasons.append("hourly close broke the prior 24-hour high")
+    elif (
+        high_24h > 0
+        and close_24h_ago > 0
+        and hourly_ema21 is not None
+        and hourly_ema55 is not None
+        and last_hour.close > hourly_ema21 > hourly_ema55
+        and last_hour.close >= high_24h * (1 - settings.momentum_continuation_max_pullback_pct)
+        and last_hour.close >= close_24h_ago * (1 + settings.momentum_continuation_min_24h_gain_pct)
+    ):
+        score += 2
+        reasons.append("hourly close is holding near the prior 24-hour high after a strong 24-hour move")
     else:
         blockers.append("no hourly close above the prior 24-hour high")
 
