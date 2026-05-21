@@ -42,6 +42,7 @@ def format_signal(signal: Signal) -> str:
         f"Generated: {signal.generated_at.isoformat()}\n\n"
         f"Reasons:\n{reasons}\n\n"
         f"Blockers:\n{blockers}"
+        f"\n\n"
     )
 
 
