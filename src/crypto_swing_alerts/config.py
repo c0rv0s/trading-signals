@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .models import AssetConfig, Provider
 
-HYPERLIQUID_DEFAULT_SYMBOLS = {"BTC", "ETH", "HYPE", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
+HYPERLIQUID_DEFAULT_SYMBOLS = {"BTC", "ETH", "HYPE", "NEAR", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
 
 
 @dataclass(frozen=True)
@@ -63,7 +63,7 @@ def _asset_config(symbol: str) -> AssetConfig:
 
 
 def load_settings() -> Settings:
-    watchlist = os.getenv("WATCHLIST", "ZEC,HYPE")
+    watchlist = os.getenv("WATCHLIST", "ZEC,HYPE,BTC,SOL,NEAR")
     assets = tuple(_asset_config(symbol) for symbol in watchlist.split(",") if symbol.strip())
     if not assets:
         raise ValueError("WATCHLIST must contain at least one asset")

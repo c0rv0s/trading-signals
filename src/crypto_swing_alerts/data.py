@@ -13,7 +13,7 @@ from .models import AssetConfig, Candle
 
 BINANCE_BASE_URL = "https://api.binance.com"
 HYPERLIQUID_INFO_URL = "https://api.hyperliquid.xyz/info"
-HYPERLIQUID_FALLBACK_SYMBOLS = {"BTC", "ETH", "HYPE", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
+HYPERLIQUID_FALLBACK_SYMBOLS = {"BTC", "ETH", "HYPE", "NEAR", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
 TIMEOUT_SECONDS = 20
 LOGGER = logging.getLogger("crypto_swing_alerts.data")
 

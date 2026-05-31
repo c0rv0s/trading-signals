@@ -112,19 +112,19 @@ For a manual check-in, send `yo`, `hey`, or `update` to the bot before the next 
 Run a local backtest against the configured watchlist and strategy:
 
 ```bash
-PYTHONPATH=src STRATEGY=swing_breakout WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest
+PYTHONPATH=src STRATEGY=swing_breakout WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest
 ```
 
 Compare every registered strategy:
 
 ```bash
-PYTHONPATH=src WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest --strategy all
+PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest --strategy all
 ```
 
 Sweep leverage from 3x through 10x:
 
 ```bash
-PYTHONPATH=src WATCHLIST=ZEC,HYPE python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
+PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
 ```
 
 Save a Markdown and CSV report:
@@ -157,14 +157,14 @@ New strategies should register a function in `STRATEGIES` in `src/crypto_swing_a
 
 ## Data Sources
 
-- `BTC`, `ETH`, `HYPE`, `PENGU`, `SOL`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
+- `BTC`, `ETH`, `HYPE`, `NEAR`, `PENGU`, `SOL`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
 - Other symbols default to Binance spot as `<SYMBOL>USDT`.
 - If Binance returns HTTP 451 for a known Hyperliquid symbol, the scanner falls back to Hyperliquid candles for that request.
 
 Override with env vars:
 
 ```bash
-WATCHLIST=ZEC,HYPE,BTC
+WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR
 ZEC_PROVIDER=hyperliquid_perp
 ZEC_MARKET=ZEC
 BTC_PROVIDER=binance_spot
