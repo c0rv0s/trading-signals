@@ -9,16 +9,16 @@ class ConfigTests(unittest.TestCase):
         with patch.dict("os.environ", {}, clear=True):
             settings = load_settings()
 
-        self.assertEqual(tuple(asset.symbol for asset in settings.assets), ("ZEC", "HYPE", "BTC", "SOL", "NEAR"))
+        self.assertEqual(tuple(asset.symbol for asset in settings.assets), ("ZEC", "HYPE", "BTC", "SOL", "NEAR", "WLD"))
 
     def test_known_watchlist_symbols_default_to_hyperliquid(self) -> None:
-        with patch.dict("os.environ", {"WATCHLIST": "BTC,ETH,SOL,XMR,PENGU,XRP,ZEC,HYPE,NEAR"}, clear=True):
+        with patch.dict("os.environ", {"WATCHLIST": "BTC,ETH,SOL,XMR,PENGU,XRP,ZEC,HYPE,NEAR,WLD"}, clear=True):
             settings = load_settings()
 
         self.assertTrue(all(asset.provider == "hyperliquid_perp" for asset in settings.assets))
         self.assertEqual(
             tuple(asset.market for asset in settings.assets),
-            ("BTC", "ETH", "SOL", "XMR", "PENGU", "XRP", "ZEC", "HYPE", "NEAR"),
+            ("BTC", "ETH", "SOL", "XMR", "PENGU", "XRP", "ZEC", "HYPE", "NEAR", "WLD"),
         )
 
     def test_provider_override_is_preserved(self) -> None:
@@ -27,6 +27,12 @@ class ConfigTests(unittest.TestCase):
 
         self.assertEqual(settings.assets[0].provider, "binance_spot")
         self.assertEqual(settings.assets[0].market, "BTCUSDT")
+
+    def test_asset_strategy_override_is_loaded(self) -> None:
+        with patch.dict("os.environ", {"WATCHLIST": "WLD", "WLD_STRATEGY": "pullback_reclaim"}, clear=True):
+            settings = load_settings()
+
+        self.assertEqual(settings.assets[0].strategy_name, "pullback_reclaim")
 
 
 if __name__ == "__main__":

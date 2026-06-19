@@ -8,6 +8,7 @@ from crypto_swing_alerts.models import AssetConfig, Candle
 from crypto_swing_alerts.strategy import (
     STRATEGIES,
     analyze_asset,
+    effective_strategy_name,
     get_strategy,
     take_profit_r_levels_for_score,
 )
@@ -107,6 +108,16 @@ class StrategyTests(unittest.TestCase):
     def test_get_strategy_rejects_unknown_name(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unknown strategy"):
             get_strategy("missing")
+
+    def test_effective_strategy_name_prefers_asset_override(self) -> None:
+        asset = AssetConfig(
+            symbol="WLD",
+            provider="hyperliquid_perp",
+            market="WLD",
+            strategy_name="pullback_reclaim",
+        )
+
+        self.assertEqual(effective_strategy_name(asset, _settings()), "pullback_reclaim")
 
     def test_expected_strategies_are_registered(self) -> None:
         self.assertIn("swing_breakout", STRATEGIES)

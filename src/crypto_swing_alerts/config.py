@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .models import AssetConfig, Provider
 
-HYPERLIQUID_DEFAULT_SYMBOLS = {"BTC", "ETH", "HYPE", "NEAR", "PENGU", "SOL", "XMR", "XRP", "ZEC"}
+HYPERLIQUID_DEFAULT_SYMBOLS = {"BTC", "ETH", "HYPE", "NEAR", "PENGU", "SOL", "WLD", "XMR", "XRP", "ZEC"}
 
 
 @dataclass(frozen=True)
@@ -57,13 +57,14 @@ def _asset_config(symbol: str) -> AssetConfig:
         "hyperliquid_perp" if normalized in HYPERLIQUID_DEFAULT_SYMBOLS else "binance_spot",
     )
     market = os.getenv(f"{normalized}_MARKET", normalized if provider == "hyperliquid_perp" else f"{normalized}USDT")
+    strategy_name = os.getenv(f"{normalized}_STRATEGY") or None
     if provider not in {"binance_spot", "hyperliquid_perp"}:
         raise ValueError(f"{normalized}_PROVIDER must be binance_spot or hyperliquid_perp")
-    return AssetConfig(symbol=normalized, provider=provider, market=market)  # type: ignore[arg-type]
+    return AssetConfig(symbol=normalized, provider=provider, market=market, strategy_name=strategy_name)  # type: ignore[arg-type]
 
 
 def load_settings() -> Settings:
-    watchlist = os.getenv("WATCHLIST", "ZEC,HYPE,BTC,SOL,NEAR")
+    watchlist = os.getenv("WATCHLIST", "ZEC,HYPE,BTC,SOL,NEAR,WLD")
     assets = tuple(_asset_config(symbol) for symbol in watchlist.split(",") if symbol.strip())
     if not assets:
         raise ValueError("WATCHLIST must contain at least one asset")

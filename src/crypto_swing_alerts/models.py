@@ -13,6 +13,7 @@ class AssetConfig:
     symbol: str
     provider: Provider
     market: str
+    strategy_name: str | None = None
 
 
 @dataclass(frozen=True)

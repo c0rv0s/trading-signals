@@ -72,7 +72,17 @@ def _send_analysis_error(asset: AssetConfig, settings: Settings, error: Exceptio
 
 
 def run_once(settings: Settings, state: SignalState) -> None:
-    LOGGER.info("Starting %s scan at %s", settings.strategy_name, datetime.now(tz=timezone.utc).isoformat())
+    overrides = tuple(asset for asset in settings.assets if asset.strategy_name)
+    if overrides:
+        override_summary = ", ".join(f"{asset.symbol}={asset.strategy_name}" for asset in overrides)
+        LOGGER.info(
+            "Starting configured scan at %s; default=%s overrides=%s",
+            datetime.now(tz=timezone.utc).isoformat(),
+            settings.strategy_name,
+            override_summary,
+        )
+    else:
+        LOGGER.info("Starting %s scan at %s", settings.strategy_name, datetime.now(tz=timezone.utc).isoformat())
     force_send = False
     if settings.telegram_bot_token and settings.telegram_chat_id:
         try:

@@ -11,7 +11,7 @@ from .data import fetch_candles
 from .indicators import atr, ema
 from .models import AssetConfig, Candle, Signal
 from .risk import liquidation_price_long, margin_return_pct
-from .strategy import STRATEGIES, analyze_asset, take_profit_r_levels_for_score
+from .strategy import STRATEGIES, analyze_asset, effective_strategy_name, take_profit_r_levels_for_score
 
 
 @dataclass(frozen=True)
@@ -578,7 +578,7 @@ def analyze_exit_policies_asset(
             policy_trades["runner_atr2"].append(trade)
 
     return [
-        _summarize_policy(asset.symbol, settings.strategy_name, settings.leverage, policy, trades, mfe_values)
+        _summarize_policy(asset.symbol, effective_strategy_name(asset, settings), settings.leverage, policy, trades, mfe_values)
         for policy, trades in policy_trades.items()
     ]
 
@@ -627,12 +627,16 @@ def backtest_asset(
         trades.append(trade)
         next_entry_index = index + max_hold_hours
 
-    return BacktestResult(settings.strategy_name, tuple(trades))
+    return BacktestResult(effective_strategy_name(asset, settings), tuple(trades))
 
 
 def combine_results(strategy_name: str, results: list[BacktestResult]) -> BacktestResult:
     trades = tuple(sorted((trade for result in results for trade in result.trades), key=lambda trade: trade.entered_at))
     return BacktestResult(strategy_name, trades)
+
+
+def _without_asset_strategy(asset: AssetConfig) -> AssetConfig:
+    return AssetConfig(symbol=asset.symbol, provider=asset.provider, market=asset.market)
 
 
 @dataclass(frozen=True)
@@ -785,7 +789,16 @@ def main() -> None:
     if args.leverage is not None:
         settings = Settings(**{**settings.__dict__, "leverage": args.leverage})
 
-    strategy_names = sorted(STRATEGIES) if args.strategy == "all" else (args.strategy or settings.strategy_name,)
+    explicit_strategy = args.strategy is not None
+    has_asset_strategy = any(asset.strategy_name for asset in settings.assets)
+    if args.strategy == "all":
+        strategy_names = tuple(sorted(STRATEGIES))
+    elif args.strategy is not None:
+        strategy_names = (args.strategy,)
+    elif has_asset_strategy:
+        strategy_names = ("configured",)
+    else:
+        strategy_names = (settings.strategy_name,)
     candles_by_asset: dict[str, tuple[list[Candle], list[Candle]]] = {}
     for asset in settings.assets:
         daily = fetch_candles(asset, "1d", settings.daily_lookback_days)
@@ -798,11 +811,18 @@ def main() -> None:
         for leverage in leverage_values:
             print(f"=== exit-analysis leverage={leverage:.1f}x ===")
             for strategy_name in strategy_names:
-                strategy_settings = Settings(**{**settings.__dict__, "strategy_name": strategy_name, "leverage": leverage})
+                strategy_settings = Settings(
+                    **{
+                        **settings.__dict__,
+                        "strategy_name": settings.strategy_name if strategy_name == "configured" else strategy_name,
+                        "leverage": leverage,
+                    }
+                )
                 for asset in settings.assets:
+                    run_asset = _without_asset_strategy(asset) if explicit_strategy else asset
                     daily, hourly = candles_by_asset[asset.symbol]
                     summaries = analyze_exit_policies_asset(
-                        asset,
+                        run_asset,
                         daily,
                         hourly,
                         strategy_settings,
@@ -817,19 +837,27 @@ def main() -> None:
     for leverage in leverage_values:
         print(f"=== leverage={leverage:.1f}x ===")
         for strategy_name in strategy_names:
-            strategy_settings = Settings(**{**settings.__dict__, "strategy_name": strategy_name, "leverage": leverage})
+            strategy_settings = Settings(
+                **{
+                    **settings.__dict__,
+                    "strategy_name": settings.strategy_name if strategy_name == "configured" else strategy_name,
+                    "leverage": leverage,
+                }
+            )
             strategy_results: list[BacktestResult] = []
             for asset in settings.assets:
+                run_asset = _without_asset_strategy(asset) if explicit_strategy else asset
                 daily, hourly = candles_by_asset[asset.symbol]
-                result = backtest_asset(asset, daily, hourly, strategy_settings, max_hold_hours=args.max_hold_hours)
+                result = backtest_asset(run_asset, daily, hourly, strategy_settings, max_hold_hours=args.max_hold_hours)
                 strategy_results.append(result)
-                summaries.append(_summary(asset.symbol, strategy_name, leverage, result))
+                summaries.append(_summary(asset.symbol, result.strategy_name, leverage, result))
                 report_trades.extend(result.trades)
                 if not args.leverage_sweep:
-                    _print_result(asset, result)
-            combined = combine_results(strategy_name, strategy_results)
-            summaries.append(_summary("ALL", strategy_name, leverage, combined))
-            print(f"ALL {strategy_name}")
+                    _print_result(run_asset, result)
+            combined_strategy_name = strategy_name if strategy_name != "configured" else "configured"
+            combined = combine_results(combined_strategy_name, strategy_results)
+            summaries.append(_summary("ALL", combined_strategy_name, leverage, combined))
+            print(f"ALL {combined_strategy_name}")
             print(
                 f"trades={len(combined.trades)} wins={combined.wins} losses={combined.losses} "
                 f"liq={combined.liquidations} win_rate={combined.win_rate:.1%} total_r={combined.total_r:.2f} "

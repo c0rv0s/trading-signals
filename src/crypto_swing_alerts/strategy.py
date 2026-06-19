@@ -640,5 +640,9 @@ def get_strategy(name: str) -> StrategyFn:
         raise ValueError(f"Unknown strategy '{name}'. Available strategies: {available}") from error
 
 
+def effective_strategy_name(asset: AssetConfig, settings: Settings) -> str:
+    return asset.strategy_name or settings.strategy_name
+
+
 def analyze_asset(asset: AssetConfig, daily: list[Candle], hourly: list[Candle], settings: Settings) -> Signal:
-    return get_strategy(settings.strategy_name)(asset, daily, hourly, settings)
+    return get_strategy(effective_strategy_name(asset, settings))(asset, daily, hourly, settings)

@@ -20,7 +20,7 @@ Hourly trigger:
 - Breakout volume ideally above 1.25x hourly volume SMA20.
 - ATR compression and higher-low structure add confidence.
 
-Select this strategy with `STRATEGY=swing_breakout`. This is the default and the current recommended live strategy.
+Select this strategy with `STRATEGY=swing_breakout`. This is the default and the current recommended live strategy. Individual assets can override it with `{SYMBOL}_STRATEGY`, for example `WLD_STRATEGY=pullback_reclaim`.
 
 Additional registered strategies are available for research:
 
@@ -112,19 +112,19 @@ For a manual check-in, send `yo`, `hey`, or `update` to the bot before the next 
 Run a local backtest against the configured watchlist and strategy:
 
 ```bash
-PYTHONPATH=src STRATEGY=swing_breakout WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest
+PYTHONPATH=src STRATEGY=swing_breakout WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR,WLD python -m crypto_swing_alerts.backtest
 ```
 
 Compare every registered strategy:
 
 ```bash
-PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest --strategy all
+PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR,WLD python -m crypto_swing_alerts.backtest --strategy all
 ```
 
 Sweep leverage from 3x through 10x:
 
 ```bash
-PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
+PYTHONPATH=src WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR,WLD python -m crypto_swing_alerts.backtest --strategy all --leverage-sweep --hourly-lookback-hours 1000 --daily-lookback-days 365 --max-hold-hours 72
 ```
 
 Save a Markdown and CSV report:
@@ -153,22 +153,25 @@ The backtester walks forward one completed hourly candle at a time, evaluates th
 
 Backtest output includes R-multiple results, leveraged margin return, and liquidation counts. Liquidation is modeled conservatively from configured leverage and maintenance margin. Funding and open-interest strategies are not tested because the current data layer only fetches OHLCV candles.
 
-New strategies should register a function in `STRATEGIES` in `src/crypto_swing_alerts/strategy.py`, then select it with `STRATEGY=your_strategy_name`.
+New strategies should register a function in `STRATEGIES` in `src/crypto_swing_alerts/strategy.py`, then select it globally with `STRATEGY=your_strategy_name` or for one asset with `{SYMBOL}_STRATEGY=your_strategy_name`.
 
 ## Data Sources
 
-- `BTC`, `ETH`, `HYPE`, `NEAR`, `PENGU`, `SOL`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
+- `BTC`, `ETH`, `HYPE`, `NEAR`, `PENGU`, `SOL`, `WLD`, `XMR`, `XRP`, and `ZEC` default to Hyperliquid perps with matching market names.
 - Other symbols default to Binance spot as `<SYMBOL>USDT`.
 - If Binance returns HTTP 451 for a known Hyperliquid symbol, the scanner falls back to Hyperliquid candles for that request.
 
 Override with env vars:
 
 ```bash
-WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR
+WATCHLIST=ZEC,HYPE,BTC,SOL,NEAR,WLD
 ZEC_PROVIDER=hyperliquid_perp
 ZEC_MARKET=ZEC
 BTC_PROVIDER=binance_spot
 BTC_MARKET=BTCUSDT
+WLD_PROVIDER=hyperliquid_perp
+WLD_MARKET=WLD
+WLD_STRATEGY=pullback_reclaim
 ```
 
 ## Exit Discipline
